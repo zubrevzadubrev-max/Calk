@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Калькулятор</title>
+  <style>
+    :root{
+      --bg: #0b1020;
+      --card: rgba(255,255,255,.08);
+      --card2: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --accent: #7c5cff;
+      --accent2:#00d4ff;
+      --danger:#ff4d6d;
+      --shadow: 0 20px 50px rgba(0,0,0,.45);
+      --radius: 22px;
+      --btnRadius: 16px;
+      --tap: 54px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(124,92,255,.35), transparent 60%),
+        radial-gradient(900px 700px at 85% 25%, rgba(0,212,255,.22), transparent 60%),
+        radial-gradient(900px 900px at 55% 100%, rgba(255,77,109,.12), transparent 55%),
+        linear-gradient(160deg, #070a12 0%, #0b1020 60%, #05070d 100%);
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+    .wrap{
+      width:min(420px, 100%);
+      display:grid;
+      gap:14px;
+    }
+
+    .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+    }
+    .dot{
+      width:12px;height:12px;border-radius:999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 0 5px rgba(124,92,255,.12);
+    }
+    .title{
+      font-weight:700;
+      letter-spacing:.2px;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.1;
+      text-align:right;
+    }
+
+    .calc{
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .display{
+      padding:18px 18px 12px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), transparent);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .display .expr{
+      min-height:22px;
+      font-family:var(--mono);
+      font-size:14px;
+      color:var(--muted);
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+    .display .value{
+      margin-top:6px;
+      font-family:var(--mono);
+      font-size:34px;
+      font-weight:700;
+      letter-spacing:.3px;
+      line-height:1.15;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .pad{
+      padding:14px;
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:10px;
+    }
+
+    button{
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      border-radius:var(--btnRadius);
+      min-height:var(--tap);
+      padding:12px 10px;
+      font-size:18px;
+      font-weight:650;
+      color:var(--text);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 8px 22px rgba(0,0,0,.25);
+      transition: transform .05s ease, background .15s ease, border-color .15s ease, box-shadow .15s ease, filter .15s ease;
+      user-select:none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button:focus-visible{
+      outline: 3px solid rgba(0,212,255,.45);
+      outline-offset: 2px;
+    }
+    button:hover{ background: rgba(255,255,255,.12); }
+    button:active{ transform: translateY(1px); filter: brightness(1.05); }
+
+    .op{
+      background: rgba(124,92,255,.16);
+      border-color: rgba(124,92,255,.30);
+    }
+    .op:hover{ background: rgba(124,92,255,.22); }
+    .eq{
+      background: linear-gradient(135deg, rgba(124,92,255,.85), rgba(0,212,255,.70));
+      border-color: rgba(255,255,255,.18);
+      box-shadow: 0 10px 28px rgba(0,212,255,.14), 0 10px 28px rgba(124,92,255,.16);
+    }
+    .eq:hover{ filter: brightness(1.07); }
+    .danger{
+      background: rgba(255,77,109,.16);
+      border-color: rgba(255,77,109,.30);
+    }
+    .danger:hover{ background: rgba(255,77,109,.22); }
+    .wide{ grid-column: span 2; }
+
+    .footer{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:0 4px;
+      color:var(--muted);
+      font-size:12px;
+      user-select:none;
+    }
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    @media (max-width: 360px){
+      .display .value{ font-size:30px; }
+      button{ font-size:17px; min-height:52px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap" role="application" aria-label="Калькулятор">
+    <div class="header">
+      <div class="brand">
+        <div class="dot" aria-hidden="true"></div>
+        <div>
+          <div class="title">Калькулятор</div>
+          <div class="hint">Клавиатура: цифры, + − × ÷, Enter, Backspace</div>
+        </div>
+      </div>
+      <div class="pill" id="modePill" title="Режим ввода">Стандарт</div>
+    </div>
+
+    <div class="calc">
+      <div class="display" aria-live="polite" aria-atomic="true">
+        <div class="expr" id="expr"> </div>
+        <div class="value" id="value">0</div>
+      </div>
+
+      <div class="pad" id="pad">
+        <button class="danger" data-action="ac" aria-label="Очистить всё">AC</button>
+        <button data-action="sign" aria-label="Поменять знак">±</button>
+        <button data-action="percent" aria-label="Процент">%</button>
+        <button class="op" data-op="÷" aria-label="Деление">÷</button>
+
+        <button data-digit="7">7</button>
+        <button data-digit="8">8</button>
+        <button data-digit="9">9</button>
+        <button class="op" data-op="×" aria-label="Умножение">×</button>
+
+        <button data-digit="4">4</button>
+        <button data-digit="5">5</button>
+        <button data-digit="6">6</button>
+        <button class="op" data-op="−" aria-label="Вычитание">−</button>
+
+        <button data-digit="1">1</button>
+        <button data-digit="2">2</button>
+        <button data-digit="3">3</button>
+        <button class="op" data-op="+" aria-label="Сложение">+</button>
+
+        <button class="wide" data-digit="0">0</button>
+        <button data-action="dot" aria-label="Точка">.</button>
+        <button class="eq" data-action="equals" aria-label="Равно">=</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="pill" id="status">Готов</span>
+      <span class="pill" id="tips">⌫ удалить • Esc очистить • Ctrl/Cmd+L очистить</span>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const elExpr = document.getElementById('expr');
+      const elValue = document.getElementById('value');
+      const elStatus = document.getElementById('status');
+      const pad = document.getElementById('pad');
+      const modePill = document.getElementById('modePill');
+
+      let a = null;          // левый операнд
+      let op = null;         // оператор
+      let b = null;          // правый операнд (для повторного '=')
+      let input = "0";       // текущий ввод
+      let justEvaluated = false;
+
+      const opsMap = {
+        "+": "+",
+        "−": "-",
+        "-": "-",
+        "×": "*",
+        "*": "*",
+        "÷": "/",
+        "/": "/"
+      };
+
+      function setStatus(text, tone="muted"){
+        elStatus.textContent = text;
+        elStatus.style.borderColor = tone === "danger"
+          ? "rgba(255,77,109,.35)"
+          : tone === "ok"
+            ? "rgba(0,212,255,.35)"
+            : "rgba(255,255,255,.10)";
+      }
+
+      function formatNumber(n){
+        if (!Number.isFinite(n)) return "Ошибка";
+        const abs = Math.abs(n);
+        if (abs !== 0 && (abs >= 1e12 || abs < 1e-9)) {
+          return n.toExponential(6).replace("+", "");
+        }
+        const rounded = Math.round((n + Number.EPSILON) * 1e12) / 1e12;
+        return rounded.toString();
+      }
+
+      function updateDisplay(){
+        const exprParts = [];
+        if (a !== null) exprParts.push(formatNumber(a));
+        if (op) exprParts.push(op);
+        elExpr.textContent = exprParts.join(" ") || " ";
+        elValue.textContent = input;
+      }
+
+      function currentNumber(){
+        const n = Number(input);
+        return Number.isFinite(n) ? n : NaN;
+      }
+
+      function resetAll(){
+        a = null; op = null; b = null;
+        input = "0";
+        justEvaluated = false;
+        setStatus("Очищено", "ok");
+        modePill.textContent = "Стандарт";
+        updateDisplay();
+      }
+
+      function inputDigit(d){
+        if (justEvaluated && !op) {
+          a = null; b = null;
+          input = d;
+          justEvaluated = false;
+          setStatus("Новый ввод");
+          updateDisplay();
+          return;
+        }
+        if (input === "0") input = d;
+        else input += d;
+        setStatus("Ввод");
+        updateDisplay();
+      }
+
+      function inputDot(){
+        if (justEvaluated && !op) {
+          a = null; b = null;
+          input = "0.";
+          justEvaluated = false;
+          setStatus("Новый ввод");
+          updateDisplay();
+          return;
+        }
+        if (!input.includes(".")) {
+          input += ".";
+          setStatus("Ввод");
+          updateDisplay();
+        }
+      }
+
+      function backspace(){
+        if (justEvaluated) justEvaluated = false;
+        if (input.length <= 1 || (input.length === 2 && input.startsWith("-"))) input = "0";
+        else input = input.slice(0, -1);
+        setStatus("Удалено");
+        updateDisplay();
+      }
+
+      function toggleSign(){
+        if (input === "0") return;
+        input = input.startsWith("-") ? input.slice(1) : "-" + input;
+        setStatus("Знак изменён");
+        updateDisplay();
+      }
+
+      function percent(){
+        const n = currentNumber();
+        if (!Number.isFinite(n)) return;
+        const base = (a !== null && op) ? a : 1;
+        const res = (base * n) / 100;
+        input = formatNumber(res);
+        setStatus("Процент", "ok");
+        updateDisplay();
+      }
+
+      function compute(x, oper, y){
+        const jsOp = opsMap[oper] ?? oper;
+        switch (jsOp) {
+          case "+": return x + y;
+          case "-": return x - y;
+          case "*": return x * y;
+          case "/": return y === 0 ? NaN : x / y;
+          default: return NaN;
+        }
+      }
+
+      function setOperator(nextOp){
+        const n = currentNumber();
+        if (!Number.isFinite(n)) { setStatus("Ошибка", "danger"); return; }
+
+        if (a === null) {
+          a = n;
+          op = nextOp;
+          input = "0";
+          justEvaluated = false;
+          setStatus("Оператор выбран");
+          modePill.textContent = "Операция";
+          updateDisplay();
+          return;
+        }
+
+        if (op && input !== "0") {
+          const res = compute(a, op, n);
+          if (!Number.isFinite(res)) {
+            input = "Ошибка";
+            setStatus("Деление на 0?", "danger");
+            a = null; op = null; b = null;
+            justEvaluated = true;
+            modePill.textContent = "Стандарт";
+            updateDisplay();
+            return;
+          }
+          a = res;
+          b = n;
+          input = "0";
+        }
+
+        op = nextOp;
+        justEvaluated = false;
+        setStatus("Оператор обновлён");
+        modePill.textContent = "Операция";
+        updateDisplay();
+      }
+
+      function equals(){
+        const n = currentNumber();
+        if (!Number.isFinite(n)) { setStatus("Ошибка", "danger"); return; }
+
+        if (a === null && op === null) {
+          setStatus("Готов");
+          updateDisplay();
+          return;
+        }
+
+        if (op && !justEvaluated) {
+          b = n;
+        } else if (op && justEvaluated) {
+          if (b === null) b = n;
+        }
+
+        if (a === null || op === null || b === null) return;
+
+        const res = compute(a, op, b);
+        if (!Number.isFinite(res)) {
+          input = "Ошибка";
+          setStatus("Деление на 0?", "danger");
+          a = null; op = null; b = null;
+          justEvaluated = true;
+          modePill.textContent = "Стандарт";
+          updateDisplay();
+          return;
+        }
+
+        elExpr.textContent = `${formatNumber(a)} ${op} ${formatNumber(b)} =`;
+        a = res;
+        input = formatNumber(res);
+        justEvaluated = true;
+        modePill.textContent = "Результат";
+        setStatus("Готов", "ok");
+        updateDisplay();
+      }
+
+      function handleAction(action){
+        switch(action){
+          case "ac": resetAll(); break;
+          case "dot": inputDot(); break;
+          case "equals": equals(); break;
+          case "sign": toggleSign(); break;
+          case "percent": percent(); break;
+        }
+      }
+
+      pad.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const digit = btn.dataset.digit;
+        const operator = btn.dataset.op;
+        const action = btn.dataset.action;
+
+        if (digit != null) inputDigit(digit);
+        else if (operator) setOperator(operator);
+        else if (action) handleAction(action);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        const k = e.key;
+
+        if ((e.ctrlKey || e.metaKey) && k.toLowerCase() === "l") {
+          e.preventDefault();
+          resetAll();
+          return;
+        }
+
+        if (k >= "0" && k <= "9") { inputDigit(k); return; }
+        if (k === "." || k === ",") { inputDot(); return; }
+
+        if (k === "Enter" || k === "=") { e.preventDefault(); equals(); return; }
+        if (k === "Backspace") { e.preventDefault(); backspace(); return; }
+        if (k === "Escape") { resetAll(); return; }
+
+        if (k === "+") { setOperator("+"); return; }
+        if (k === "-" ) { setOperator("−"); return; }
+        if (k === "*" ) { setOperator("×"); return; }
+        if (k === "/" ) { setOperator("÷"); return; }
+
+        if (k === "%") { percent(); return; }
+      });
+
+      elValue.addEventListener('dblclick', backspace);
+
+      resetAll();
+    })();
+  </script>
+</body>
+</html>
